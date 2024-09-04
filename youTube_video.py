@@ -101,4 +101,4 @@ st.sidebar.write("This app allows you to download videos from YouTube by simply 
 st.sidebar.markdown("---")
 st.sidebar.markdown("<h3 style='color: #FF4B4B;'>Developer</h3>", unsafe_allow_html=True)
 st.sidebar.write("**M. Shahjhan Gondal**")
-st.sidebar.write("**Email:** shahjhangondal99@gmail.com")
+st.sidebar.write("**Email:** shahjhangondal99@gmail444.com")
