@@ -46,7 +46,6 @@ def download_video(url, output_path):
     except Exception as e:
         st.error(f"❌ An error occurred: {e}")
 
-# The rest of your code remains unchanged...
 
 # Initialize session state for URL and output directory
 if "video_url" not in st.session_state:
