@@ -41,8 +41,12 @@ def download_video(url, output_path):
             ydl.download([url])
         if final_path:  # Check if the final path was captured
             st.success(f"🎉 Downloaded video saved to: {final_path}")
+    except BrokenPipeError:
+        st.error("❌ Download interrupted: Broken pipe error. Please try again.")
     except Exception as e:
         st.error(f"❌ An error occurred: {e}")
+
+# The rest of your code remains unchanged...
 
 # Initialize session state for URL and output directory
 if "video_url" not in st.session_state:
