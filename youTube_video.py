@@ -1,51 +1,56 @@
 import re
+import re
 import streamlit as st
 import yt_dlp as youtube_dl
 import os
+import time
 
-# Function to download YouTube video
-def download_video(url, output_path):
-    # This variable will hold the title of the video
-    video_title = None
-    
-    # Initialize the progress bar
-    progress_bar = st.progress(0)
-    progress_text = st.empty()
-    final_path = None  # Variable to store the final output path
+# Function to download YouTube video with retry logic
+def download_video(url, output_path, retries=3):
+    for attempt in range(retries):
+        try:
+            # Attempt to download the video
+            video_title = None
+            progress_bar = st.progress(0)
+            progress_text = st.empty()
+            final_path = None
 
-    # Progress hook to track download progress
-    def progress_hook(d):
-        nonlocal video_title, final_path
-        if d['status'] == 'downloading':
-            if not video_title:
-                video_title = d.get('info_dict', {}).get('title', 'Unknown title')
-            # Clean the percentage string to remove non-numeric characters
-            percent_str = re.sub(r'\x1b\[.*?m', '', d['_percent_str']).strip()
-            percent = float(percent_str.strip('%'))
-            progress_bar.progress(int(percent))
-            progress_text.text(f"🎥 Downloading '{video_title}': {percent:.2f}%")
-        elif d['status'] == 'finished':
-            final_path = d['info_dict']['_filename']  # Capture the final output path
-            progress_text.text(f"✅ Download completed for '{video_title}'")
-            progress_bar.progress(100)
+            def progress_hook(d):
+                nonlocal video_title, final_path
+                if d['status'] == 'downloading':
+                    if not video_title:
+                        video_title = d.get('info_dict', {}).get('title', 'Unknown title')
+                    percent_str = re.sub(r'\x1b\[.*?m', '', d['_percent_str']).strip()
+                    percent = float(percent_str.strip('%'))
+                    progress_bar.progress(int(percent))
+                    progress_text.text(f"🎥 Downloading '{video_title}': {percent:.2f}%")
+                elif d['status'] == 'finished':
+                    final_path = d['info_dict']['_filename']
+                    progress_text.text(f"✅ Download completed for '{video_title}'")
+                    progress_bar.progress(100)
 
-    # Setup download options
-    ydl_opts = {
-        'progress_hooks': [progress_hook],
-        'outtmpl': os.path.join(output_path, '%(title)s.%(ext)s'),  # specify the output directory and filename template
-    }
+            ydl_opts = {
+                'progress_hooks': [progress_hook],
+                'outtmpl': os.path.join(output_path, '%(title)s.%(ext)s'),
+            }
 
-    # Download the video
-    try:
-        with youtube_dl.YoutubeDL(ydl_opts) as ydl:
-            ydl.download([url])
-        if final_path:  # Check if the final path was captured
-            st.success(f"🎉 Downloaded video saved to: {final_path}")
-    except BrokenPipeError:
-        st.error("❌ Download interrupted: Broken pipe error. Please try again.")
-    except Exception as e:
-        st.error(f"❌ An error occurred: {e}")
+            with youtube_dl.YoutubeDL(ydl_opts) as ydl:
+                ydl.download([url])
+            if final_path:
+                st.success(f"🎉 Downloaded video saved to: {final_path}")
+            break  # Exit the loop if successful
 
+        except BrokenPipeError:
+            if attempt < retries - 1:
+                st.warning(f"⚠️ Download interrupted (Broken pipe error). Retrying... ({attempt + 1}/{retries})")
+                time.sleep(1)  # Wait before retrying
+            else:
+                st.error("❌ Download failed after multiple attempts: Broken pipe error.")
+        except Exception as e:
+            st.error(f"❌ An error occurred: {e}")
+            break
+
+# Your Streamlit app code continues...
 
 # Initialize session state for URL and output directory
 if "video_url" not in st.session_state:
